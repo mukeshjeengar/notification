@@ -1,12 +1,10 @@
-# Notification
-
-# Setup steps:
+# Notification Setup steps:
 
 # clone the project
 	git clone https://github.com/mukeshjeengar/notification.git
 
 #change directory
-	cd  notification
+	cd notification
 
 #set nginx push stream module path
 	NGINX_PUSH_STREAM_MODULE_PATH=$PWD/nginx-push-stream-module
@@ -17,11 +15,8 @@
 # install and finish
 
 	cd nginx-1.2.0
-
 	./configure --add-module=../nginx-push-stream-module
-
 	make
-
 	sudo make install
 
 # test configuration
@@ -31,10 +26,7 @@
 		configuration file $NGINX_PUSH_STREAM_MODULE_PATH/misc/nginx.conf test is successful
 
 # run
-sudo /usr/local/nginx/sbin/nginx -c $NGINX_PUSH_STREAM_MODULE_PATH/misc/nginx.conf
-
-	Now nginx push stream module setup done.
-
+	sudo /usr/local/nginx/sbin/nginx -c $NGINX_PUSH_STREAM_MODULE_PATH/misc/nginx.conf
 
 #Database setup
 
