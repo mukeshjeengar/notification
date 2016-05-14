@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title>Notification</title>
+	<link href="bootstrap-3.3.6-dist/css/bootstrap.min.css" rel="stylesheet">	
+	<style>
+		.notification-container {
+			background-color: #fff;
+			border: 1px solid rgba(100, 100, 100, .4);
+			-webkit-box-shadow: 0 3px 8px rgba(0, 0, 0, .25);
+			overflow: visible;
+			position: absolute;
+			top: 65px;
+			margin-left: -186px;
+			width: 400px;
+			z-index: -1;
+			display: none;
+			border-radius: 10px 10px 0px 0px;
+		}
+		.notification-container:before {
+			content: '';
+			display: block;
+			position: absolute;
+			width: 0;
+			height: 0;
+			color: transparent;
+			border: 10px solid black;
+			border-color: transparent transparent #f5f5f5;
+			margin-top: -20px;
+			margin-left: 188px;
+		}
+		.notification-title {
+			z-index: 1000;
+			font-weight: bold;
+			padding: 8px;
+			font-size: 15px;
+			color: #7D8792;
+			background-color: #ffffff;
+			border-bottom: 1px solid #dddddd;
+			border-radius: 10px 10px 0px 0px;
+			text-align: center;
+		}
+		.notification-body {			
+			min-height:200px;
+			background-color: #fff;
+			overflow-y:scroll;
+			max-height: 300px;
+		}		
+		.notification-li > .notification-count {
+			position: absolute;
+			top: 6px;
+			left: 13px;		 
+		}
+		.notification-count {
+			background-color: #23B7B7;
+			z-index: 1000;
+		}
+		.event{
+			background-color: #E9EFF2;    
+			border-bottom: 1px solid #ccc;
+			padding: 10px 0px;
+		}
+		.event-icon img{
+			width: 40px;
+			border-radius: 10px;
+			padding: 5px;
+		}
+		.event-name{
+			color: #909AA4;
+			font-size: 14px;
+			font-weight: bold;
+			margin-right: 7px;
+		}
+		.event-message{
+			color: #A2ACB5;
+			font-size: 13px;
+			text-transform: lowercase;
+		}
+		.float-left{
+			float: left;
+		}
+		.float-right{
+			float: right;
+		}
+		.clear-both{
+			clear: both;
+		}
+		.event-right-side{
+			margin-top: 6px;
+		}
+		#loading{
+			position: absolute;
+			bottom: 1px;
+			left: 187px;
+		}
+		.read{
+			background-color: rgba(255,255,255,.15);
+		}
+		::-webkit-scrollbar {
+			width: 4px;
+		}		 
+		::-webkit-scrollbar-track {
+			-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+			-webkit-border-radius: 10px;
+			border-radius: 10px;
+		}
+		::-webkit-scrollbar-thumb {
+			-webkit-border-radius: 10px;
+			border-radius: 10px;
+			background: #777; 
+			-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
+		}
+		::-webkit-scrollbar-thumb:window-inactive {
+			background: #767; 
+		}
+	</style>
+</head>
+
+<body style="color: #fff;background-color: #555;">
+	<nav class="navbar navbar-default">
+		<div class="">
+			<!-- Brand and toggle get grouped for better mobile display -->
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#">Brand</a>
+			</div>
+
+			<!-- Collect the nav links, forms, and other content for toggling -->
+			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+				<ul class="nav navbar-nav">
+					<li class="active"><a href="#">Link1<span class="sr-only">(current)</span></a></li>
+					<li><a href="#">Link2</a></li>			
+					<li><a href="#">Link3</a></li>			
+					<li class="notification-li">							
+						<span class="badge notification-count" style="">0</span>
+						<a href="#" class="notification-link" style="padding: 0px;margin-top: 13px;">							
+							<img src="images/notification.svg" style="width: 25px;">
+						</a>
+						<div class="notification-container">
+							<div class="notification-title">
+								<span style="margin-right: 5px;">Notifications</span>
+								<span class="badge notification-count" style="">0</span>
+							</div>
+							<div class="notification-body" max-data="0">
+								<div></div>
+								<img src="images/loading.gif" id="loading" alt="Loading…" />								
+							</div>
+						</div>
+					</li>
+				</ul>					
+			</div><!-- /.navbar-collapse -->
+		</div><!-- /.container-fluid -->
+	</nav>
+
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="bootstrap-3.3.6-dist/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/pushstream.js"></script>
+
+	<script type="text/javascript" >
+		$(document).ready(function() {
+
+			//PushStream.LOG_LEVEL = 'debug';
+			var pushstream = new PushStream({
+				host: 'localhost',
+				port: 9080,
+				modes: "websocket|eventsource|stream"
+			}), 
+			backend_host = "http://mukesh.com/notification/backend/Notificaton.php",			
+			unread_count = 0,
+			page = 1;
+
+			pushstream.onmessage = _manage_event;
+			pushstream.onstatuschange = _status_changed;
+
+			function _manage_event(event) {
+				console.log("New Notification", event);
+				if (event != '') {
+					$(".notification-count").html(parseInt($(".notification-count").html())+1);
+					$(".notification-body").attr("max-data",parseInt($(".notification-body").attr("max-data"))+1);
+					$(".notification-count").fadeIn("slow");
+					add_notification(event);				
+				}
+			}
+
+			function _status_changed(state) {
+				if (state == PushStream.OPEN) {
+					console.log('online');
+				} else {
+					console.log('offline');
+				}
+			}
+
+			function _connect(channel) {
+				pushstream.removeAllChannels();
+				try {
+					pushstream.addChannel(channel);
+					pushstream.connect();
+				} catch(e) {
+					alert(e)
+				}
+			}
+
+			function add_notification(event) {
+				var read_class = (event.is_read=='1')?"read":"",
+					event_html = '<div class="event '+read_class+'" data="'+event.id+'">'+
+					'<div class="event-icon float-left"><img src="images/'+event.icon+'"></div>'+
+					'<div class="event-right-side"><span class="event-name">'+event.name+'</span>'+
+					'<span class="event-message">'+event.message+'</span></div>'+
+					'<div class="clear-both"></div></div>';
+				$(".notification-body").children('div:first').prepend(event_html);
+			}
+
+			function get_notifications() {
+				$.ajax({
+					dataType: "json",
+					url: backend_host+"?action=list&page="+page,
+					type: "GET",
+					success: function(response){
+						console.log(response);
+						$(".notification-count").html(response.data.unread_count);
+						$(".notification-body").attr('max-data', response.data.total_count);
+						for (var i = 0; i < response.data.notifications.length; i++) {
+							add_notification(response.data.notifications[i]);
+						}
+						page++;
+						$('#loading').hide();
+					},
+					error: function(response){
+						console.log(response);
+					}
+				})
+			}
+
+			function read_notification(ids) {
+				$.ajax({
+					dataType: "json",
+					url: backend_host+"?action=read&ids="+ids,
+					type: "GET",
+					success: function(response){
+						console.log(response);						
+					},
+					error: function(response){
+						console.log(response);
+					}
+				})
+			}
+
+			function is_visible(selector){
+				if(!$(selector).hasClass('read')){
+									
+					if($(selector).offset().top+2 >= $(".notification-body").offset().top  && 
+						($(selector).offset().top+$(selector).outerHeight()-$(".notification-body").offset().top) <= $(".notification-body").height()+2) {
+						
+						read_notification(parseInt($(selector).attr('data')));
+						$(selector).addClass('read', 3000);
+						$(".notification-count").html(parseInt($(".notification-count").html())-1);
+					}
+				}
+			}
+
+			get_notifications();
+
+			$(".notification-link").click(function() {				
+				$(".notification-container").fadeToggle(400);
+				$(".notification-body").children().children().each(function(){
+					is_visible(this);
+				})
+				return false;
+			});
+
+			//Document Click
+			$(document).click(function() {
+				$(".notification-container").hide();
+			});
+
+			//Popup Click
+			$(".notification-container").click(function() {
+				return false
+			});			
+
+			// Each time the user scrolls
+			$(".notification-body").scroll(function(){
+				//mark event read
+				$(this).children().children().each(function(){					
+					is_visible(this);					
+				})
+			
+				//get next page events
+				if ($(this).scrollTop()+$(this).innerHeight() >= $(this).children('div:first').outerHeight() && parseInt($(this).attr("max-data")) > $(this).children().children().length) {
+					$('#loading').show();
+					get_notifications();
+				}
+			});
+
+			//connect to channel
+			_connect('my_channel_1');
+		});
+	</script>
+
+</body>
+</html>
